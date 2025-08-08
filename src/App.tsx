@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 /*
@@ -8,18 +9,15 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
 // --- Константы для генерации ---
 const TOTAL_NODES = 30
-const NODE_VERTICAL_SPACING = 130 // Расстояние по вертикали между узлами
-const NODE_START_TOP = 150 // Начальная позиция самого верхнего узла
-const CONTENT_HEIGHT = NODE_START_TOP + TOTAL_NODES * NODE_VERTICAL_SPACING // Вычисляем общую высоту контента
+const NODE_VERTICAL_SPACING = 130
+const NODE_START_TOP = 150
+const CONTENT_HEIGHT = NODE_START_TOP + TOTAL_NODES * NODE_VERTICAL_SPACING
 
 // --- Генерация данных для узлов ---
 const nodesData = Array.from({ length: TOTAL_NODES }, (_, i) => {
 	const id = i + 1
 	const top = NODE_START_TOP + i * NODE_VERTICAL_SPACING
-	const left =
-		id % 2 !== 0
-			? 'calc(50% - 100px)' // Нечетные слева
-			: 'calc(50% + 50px)' // Четные справа
+	const left = id % 2 !== 0 ? 'calc(50% - 100px)' : 'calc(50% + 50px)'
 
 	return { id, top, left }
 })
@@ -35,38 +33,96 @@ const styles = {
 		position: 'relative',
 		fontFamily: 'sans-serif',
 	},
-	header: {
+	// --- ИЗМЕНЕНИЕ: Базовый стиль для круглых плавающих кнопок ---
+	floatingButtonBase: {
 		position: 'fixed',
-		top: 0,
-		left: 0,
-		width: '100%',
-		padding: '20px',
-		boxSizing: 'border-box',
 		zIndex: 10,
-		background: '#212121',
-	},
-	backArrow: {
-		fontSize: '30px',
-		cursor: 'pointer',
-	},
-	footer: {
-		position: 'fixed',
-		bottom: 0,
-		left: 0,
-		width: '100%',
-		padding: '20px 25px',
+		width: '56px',
+		height: '56px',
+		borderRadius: '50%',
 		display: 'flex',
-		justifyContent: 'space-between',
+		justifyContent: 'center',
 		alignItems: 'center',
-		boxSizing: 'border-box',
-		zIndex: 10,
-		background: '#212121',
-	},
-	footerIcon: {
-		fontSize: '28px',
 		cursor: 'pointer',
+		background: 'rgba(40, 40, 40, 0.8)',
+		border: '1px solid rgba(255, 255, 255, 0.1)',
+		boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+		fontSize: '28px',
 	},
+	backButton: {
+		position: 'fixed',
+		zIndex: 10,
+		width: '44px',
+		height: '44px',
+		borderRadius: '50%',
+		display: 'flex',
+		justifyContent: 'center',
+		alignItems: 'center',
+		cursor: 'pointer',
+		background: 'rgba(40, 40, 40, 0.8)',
+		border: '1px solid rgba(255, 255, 255, 0.1)',
+		fontSize: '28px',
+		top: '20px',
+		left: '20px',
+	},
+	groupsButton: {
+		position: 'fixed',
+		zIndex: 10,
+		width: '56px',
+		height: '56px',
+		borderRadius: '50%',
+		display: 'flex',
+		justifyContent: 'center',
+		alignItems: 'center',
+		cursor: 'pointer',
+		background: 'rgba(40, 40, 40, 0.8)',
+		border: '1px solid rgba(255, 255, 255, 0.1)',
+		boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+		fontSize: '28px',
+		bottom: '20px',
+		left: '20px',
+	},
+	notificationsButton: {
+		position: 'fixed',
+		zIndex: 10,
+		width: '56px',
+		height: '56px',
+		borderRadius: '50%',
+		display: 'flex',
+		justifyContent: 'center',
+		alignItems: 'center',
+		cursor: 'pointer',
+		background: 'rgba(40, 40, 40, 0.8)',
+		border: '1px solid rgba(255, 255, 255, 0.1)',
+		boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+		fontSize: '28px',
+		bottom: '20px',
+		right: '20px',
+	},
+	num: {
+		position: 'fixed',
+		zIndex: 10,
+
+		borderRadius: '30%',
+    padding: '10px',
+		display: 'flex',
+		justifyContent: 'center',
+		alignItems: 'center',
+		cursor: 'pointer',
+		background: 'rgba(40, 40, 40, 0.8)',
+		border: '1px solid rgba(255, 255, 255, 0.1)',
+		boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+		fontSize: '28px',
+		top: '20px',
+		right: '20px',
+	},
+	// --- ИЗМЕНЕНИЕ: Стиль для главной кнопки "Вступить" ---
 	joinButton: {
+		position: 'fixed',
+		zIndex: 10,
+		bottom: '20px',
+		left: '50%',
+		transform: 'translateX(-50%)',
 		padding: '15px 45px',
 		backgroundColor: '#e0e0e0',
 		color: '#000',
@@ -75,15 +131,16 @@ const styles = {
 		fontSize: '16px',
 		fontWeight: 500,
 		cursor: 'pointer',
+		boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
 	},
 	canvasWrapper: {
 		width: '100%',
 		height: '100vh',
+		background: '#222',
 	},
 	contentWrapper: {
 		position: 'relative',
 		width: '100%',
-		// Динамически вычисляем высоту
 		height: `${CONTENT_HEIGHT}px`,
 	},
 	node: {
@@ -106,35 +163,32 @@ const styles = {
 		fontSize: '20px',
 		color: '#aaa',
 	},
-	// Стили для соединительных линий
 	line: {
 		position: 'absolute',
 		width: '155px',
 		height: '2px',
 		background: 'white',
 		zIndex: 1,
-		// Центрируем линию относительно ее левой точки
 		left: 'calc(50% - 45px)',
 	},
 } as const
 
 function App() {
+	// Вся логика для скрытия удалена, код стал намного проще!
+
+	const [isVisible, setIsVisible] = useState(true)
 	return (
 		<div style={styles.appContainer}>
-			<header style={styles.header}>
-				<span style={styles.backArrow}>←</span>
-			</header>
+			<div style={styles.backButton}>
+				<span>←</span>
+			</div>
 
 			<TransformWrapper
-				limitToBounds={true}
-				minScale={0.05} // Уменьшил минимальный зум, чтобы видеть всю карту
+				limitToBounds={false}
+				centerOnInit={true}
+				minScale={0.05}
 				maxScale={3}
-				initialScale={0.8} // Начальный масштаб, чтобы больше влезало
-				initialPositionY={0}
-				panning={{
-					disabled: false,
-					velocityDisabled: false,
-				}}
+				initialScale={0.8}
 				doubleClick={{ disabled: true }}
 				wheel={{ step: 0.1 }}
 			>
@@ -166,11 +220,8 @@ function App() {
 					{/* АВТОМАТИЧЕСКИ РЕНДЕРИМ ВСЕ ЛИНИИ */}
 					{nodesData.slice(0, -1).map((node, index) => {
 						const nextNode = nodesData[index + 1]
-						// Вычисляем позицию линии ровно посередине между двумя узлами
 						const lineTop = (node.top + nextNode.top) / 2
-						// Чередуем угол наклона
 						const rotation = index % 2 === 0 ? 35 : -35
-
 						return (
 							<div
 								key={`line-${node.id}`}
@@ -185,11 +236,15 @@ function App() {
 				</TransformComponent>
 			</TransformWrapper>
 
-			<footer style={styles.footer}>
-				<span style={styles.footerIcon}>👥</span>
-				<button style={styles.joinButton}>Вступить</button>
-				<span style={styles.footerIcon}>🔔</span>
-			</footer>
+			{/* --- ИЗМЕНЕНИЕ: Футер заменен тремя независимыми плавающими кнопками --- */}
+			<div style={styles.groupsButton}>👥</div>
+			{isVisible && (
+				<button onClick={() => setIsVisible(false)} style={styles.joinButton}>
+					Вступить
+				</button>
+			)}
+			{!isVisible && <div style={styles.num}>Вы 16</div>}
+			<div style={styles.notificationsButton}>🔔</div>
 		</div>
 	)
 }
