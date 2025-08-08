@@ -1,8 +1,13 @@
 
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
-// --- Стили ---
-// Добавляем "as const" в конце, чтобы TypeScript правильно определил типы
+
+
+//   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+// ВАЖНО ЧТОБЫ НЕ БЫЛО ПРИБЛИЖЕНИЯ
+
+
+
 const styles = {
 	// Главный контейнер, темный фон, на весь экран
 	appContainer: {
@@ -116,8 +121,8 @@ function App() {
       
       <TransformWrapper
         limitToBounds={true}
-        minScale={0.8}
-        maxScale={1.5}
+        minScale={0.2}
+        maxScale={3}
         initialScale={1}
         initialPositionY={-100} // Сразу немного проскроллим вниз
         panning={{
