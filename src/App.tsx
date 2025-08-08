@@ -32,6 +32,7 @@ const styles = {
 		overflow: 'hidden',
 		position: 'relative',
 		fontFamily: 'sans-serif',
+		touchAction: 'none',
 	},
 	// --- ИЗМЕНЕНИЕ: Базовый стиль для круглых плавающих кнопок ---
 	floatingButtonBase: {
@@ -104,7 +105,7 @@ const styles = {
 		zIndex: 10,
 
 		borderRadius: '30%',
-    padding: '10px',
+		padding: '10px',
 		display: 'flex',
 		justifyContent: 'center',
 		alignItems: 'center',
