@@ -1,27 +1,42 @@
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+/*
+ *   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+ *   ВАЖНО: Убедитесь, что этот мета-тег добавлен в ваш public/index.html,
+ *   чтобы предотвратить масштабирование всей страницы на мобильных устройствах.
+ */
 
+// --- Константы для генерации ---
+const TOTAL_NODES = 30
+const NODE_VERTICAL_SPACING = 130 // Расстояние по вертикали между узлами
+const NODE_START_TOP = 150 // Начальная позиция самого верхнего узла
+const CONTENT_HEIGHT = NODE_START_TOP + TOTAL_NODES * NODE_VERTICAL_SPACING // Вычисляем общую высоту контента
 
+// --- Генерация данных для узлов ---
+const nodesData = Array.from({ length: TOTAL_NODES }, (_, i) => {
+	const id = i + 1
+	const top = NODE_START_TOP + i * NODE_VERTICAL_SPACING
+	const left =
+		id % 2 !== 0
+			? 'calc(50% - 100px)' // Нечетные слева
+			: 'calc(50% + 50px)' // Четные справа
 
-//   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-// ВАЖНО ЧТОБЫ НЕ БЫЛО ПРИБЛИЖЕНИЯ
+	return { id, top, left }
+})
 
-
-
+// --- Стили ---
 const styles = {
-	// Главный контейнер, темный фон, на весь экран
 	appContainer: {
 		backgroundColor: '#222',
 		color: 'white',
 		width: '100vw',
 		height: '100vh',
 		overflow: 'hidden',
-		position: 'relative', // TS теперь видит это как 'relative', а не string
+		position: 'relative',
 		fontFamily: 'sans-serif',
 	},
-	// Хэдер со стрелкой
 	header: {
-		position: 'fixed', // TS теперь видит это как 'fixed'
+		position: 'fixed',
 		top: 0,
 		left: 0,
 		width: '100%',
@@ -34,9 +49,8 @@ const styles = {
 		fontSize: '30px',
 		cursor: 'pointer',
 	},
-	// Футер с кнопками
 	footer: {
-		position: 'fixed', // TS теперь видит это как 'fixed'
+		position: 'fixed',
 		bottom: 0,
 		left: 0,
 		width: '100%',
@@ -62,25 +76,23 @@ const styles = {
 		fontWeight: 500,
 		cursor: 'pointer',
 	},
-	// Сам холст для панорамирования
 	canvasWrapper: {
 		width: '100%',
 		height: '100vh',
 	},
-	// Внутренний контейнер с контентом, который мы двигаем
 	contentWrapper: {
-		position: 'relative', // TS теперь видит это как 'relative'
+		position: 'relative',
 		width: '100%',
-		height: '1800px',
+		// Динамически вычисляем высоту
+		height: `${CONTENT_HEIGHT}px`,
 	},
-	// Стили для кружков-узлов
 	node: {
 		width: '90px',
 		height: '90px',
 		backgroundColor: '#555',
 		border: '2px solid white',
 		borderRadius: '50%',
-		position: 'absolute', // TS теперь видит это как 'absolute'
+		position: 'absolute',
 		display: 'flex',
 		justifyContent: 'center',
 		alignItems: 'center',
@@ -88,91 +100,98 @@ const styles = {
 		fontWeight: 'bold',
 		zIndex: 5,
 	},
-	// Стили для номера рядом с кружком
 	nodeLabel: {
-		position: 'absolute', // TS теперь видит это как 'absolute'
+		position: 'absolute',
 		transform: 'translateX(-40px)',
 		fontSize: '20px',
 		color: '#aaa',
 	},
-} as const // <--- ВОТ ИСПРАВЛЕНИЕ
-
-// --- Данные для узлов ---
-const nodesData = [
-  { id: 1,  top: 150, left: 'calc(50% - 100px)' },
-  { id: 2,  top: 280, left: 'calc(50% + 50px)'  },
-  { id: 3,  top: 410, left: 'calc(50% - 100px)' },
-  { id: 4,  top: 540, left: 'calc(50% + 50px)'  },
-  { id: 5,  top: 670, left: 'calc(50% - 100px)' },
-  { id: 6,  top: 800, left: 'calc(50% + 50px)'  },
-  { id: 7,  top: 930, left: 'calc(50% - 100px)' },
-  { id: 8,  top: 1060,left: 'calc(50% + 50px)'  },
-  { id: 9,  top: 1190,left: 'calc(50% - 100px)' },
-  { id: 10, top: 1320,left: 'calc(50% + 50px)'  },
-  { id: 11, top: 1450,left: 'calc(50% - 100px)' },
-];
+	// Стили для соединительных линий
+	line: {
+		position: 'absolute',
+		width: '155px',
+		height: '2px',
+		background: 'white',
+		zIndex: 1,
+		// Центрируем линию относительно ее левой точки
+		left: 'calc(50% - 45px)',
+	},
+} as const
 
 function App() {
-  return (
-    <div style={styles.appContainer}>
-      <header style={styles.header}>
-        <span style={styles.backArrow}>←</span>
-      </header>
-      
-      <TransformWrapper
-        limitToBounds={true}
-        minScale={0.2}
-        maxScale={3}
-        initialScale={1}
-        initialPositionY={-100} // Сразу немного проскроллим вниз
-        panning={{
-          disabled: false,
-          velocityDisabled: false,
-        }}
-        doubleClick={{ disabled: true }}
-        wheel={{ step: 0.1 }}
-      >
-        <TransformComponent
-          wrapperStyle={styles.canvasWrapper}
-          contentStyle={styles.contentWrapper}
-        >
-          {nodesData.map(node => (
-            <div
-              key={node.id}
-              style={{
-                ...styles.node,
-                top: `${node.top}px`,
-                left: node.left,
-              }}
-            >
-              <span style={{...styles.nodeLabel, left: node.id % 2 === 0 ? '120px' : '-50px'}}>
-                {node.id}
-              </span>
-            </div>
-          ))}
+	return (
+		<div style={styles.appContainer}>
+			<header style={styles.header}>
+				<span style={styles.backArrow}>←</span>
+			</header>
 
-          {/* Соединительные линии (грязный вариант) */}
-          <div style={{ position: 'absolute', top: 215, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 345, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(-35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 475, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 605, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(-35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 735, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 865, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(-35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 995, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 1125, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(-35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 1255, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(35deg)', zIndex: 1 }}></div>
-          <div style={{ position: 'absolute', top: 1385, left: 'calc(50% - 45px)', width: '155px', height: '2px', background: 'white', transform: 'rotate(-35deg)', zIndex: 1 }}></div>
+			<TransformWrapper
+				limitToBounds={true}
+				minScale={0.05} // Уменьшил минимальный зум, чтобы видеть всю карту
+				maxScale={3}
+				initialScale={0.8} // Начальный масштаб, чтобы больше влезало
+				initialPositionY={0}
+				panning={{
+					disabled: false,
+					velocityDisabled: false,
+				}}
+				doubleClick={{ disabled: true }}
+				wheel={{ step: 0.1 }}
+			>
+				<TransformComponent
+					wrapperStyle={styles.canvasWrapper}
+					contentStyle={styles.contentWrapper}
+				>
+					{/* Рендерим все узлы */}
+					{nodesData.map(node => (
+						<div
+							key={node.id}
+							style={{
+								...styles.node,
+								top: `${node.top}px`,
+								left: node.left,
+							}}
+						>
+							<span
+								style={{
+									...styles.nodeLabel,
+									left: node.id % 2 === 0 ? '120px' : '-50px',
+								}}
+							>
+								{node.id}
+							</span>
+						</div>
+					))}
 
-        </TransformComponent>
-      </TransformWrapper>
+					{/* АВТОМАТИЧЕСКИ РЕНДЕРИМ ВСЕ ЛИНИИ */}
+					{nodesData.slice(0, -1).map((node, index) => {
+						const nextNode = nodesData[index + 1]
+						// Вычисляем позицию линии ровно посередине между двумя узлами
+						const lineTop = (node.top + nextNode.top) / 2
+						// Чередуем угол наклона
+						const rotation = index % 2 === 0 ? 35 : -35
 
-      <footer style={styles.footer}>
-        <span style={styles.footerIcon}>👥</span>
-        <button style={styles.joinButton}>Вступить</button>
-        <span style={styles.footerIcon}>🔔</span>
-      </footer>
-    </div>
-  );
+						return (
+							<div
+								key={`line-${node.id}`}
+								style={{
+									...styles.line,
+									top: `${lineTop}px`,
+									transform: `rotate(${rotation}deg)`,
+								}}
+							/>
+						)
+					})}
+				</TransformComponent>
+			</TransformWrapper>
+
+			<footer style={styles.footer}>
+				<span style={styles.footerIcon}>👥</span>
+				<button style={styles.joinButton}>Вступить</button>
+				<span style={styles.footerIcon}>🔔</span>
+			</footer>
+		</div>
+	)
 }
 
-export default App;
+export default App
